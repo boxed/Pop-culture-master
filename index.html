@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Finish the Line — Pop-Culture Quote Game</title>
+<style>
+  :root {
+    --bg: #0f1020;
+    --panel: #1a1c33;
+    --panel-2: #23264a;
+    --ink: #f2f3ff;
+    --muted: #9aa0c7;
+    --accent: #ffd166;
+    --good: #4ade80;
+    --bad: #f87171;
+    --line: #33375e;
+    --Movies: #ff8fab;
+    --TV: #8ecae6;
+    --Music: #c3a6ff;
+    --Internet: #7be0ad;
+    --Games: #ffd166;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: "Segoe UI", system-ui, -apple-system, Roboto, Helvetica, Arial, sans-serif;
+    background: radial-gradient(1200px 700px at 70% -10%, #23264a 0%, var(--bg) 55%);
+    color: var(--ink);
+    min-height: 100vh;
+    line-height: 1.5;
+  }
+  .wrap { max-width: 900px; margin: 0 auto; padding: 24px 18px 60px; }
+  header h1 {
+    font-size: clamp(1.7rem, 4vw, 2.6rem);
+    margin: 0 0 2px;
+    letter-spacing: 0.5px;
+  }
+  header .tag { color: var(--muted); margin: 0 0 20px; }
+  header .tag b { color: var(--accent); }
+
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: 0 12px 40px rgba(0,0,0,.35);
+  }
+  .stack > * + * { margin-top: 16px; }
+
+  /* ---- Setup screen ---- */
+  label { display: block; font-weight: 600; margin-bottom: 6px; }
+  .players input, select, input[type="number"] {
+    width: 100%;
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    color: var(--ink);
+    border-radius: 10px;
+    padding: 10px 12px;
+    font-size: 1rem;
+  }
+  .player-row { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
+  .player-row .swatch { width: 22px; height: 22px; border-radius: 50%; flex: 0 0 auto; }
+  .cats { display: flex; flex-wrap: wrap; gap: 10px; }
+  .cats label {
+    display: flex; align-items: center; gap: 6px; font-weight: 500;
+    background: var(--panel-2); border: 1px solid var(--line);
+    padding: 6px 12px; border-radius: 999px; cursor: pointer; margin: 0;
+  }
+  .cats input { width: auto; }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+  button {
+    font: inherit; font-weight: 700; cursor: pointer;
+    border: none; border-radius: 10px; padding: 12px 18px;
+    background: var(--accent); color: #201a00;
+    transition: transform .06s ease, filter .15s ease;
+  }
+  button:hover { filter: brightness(1.06); }
+  button:active { transform: translateY(1px); }
+  button.ghost { background: var(--panel-2); color: var(--ink); border: 1px solid var(--line); }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+
+  /* ---- Board ---- */
+  .board {
+    display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 4px;
+  }
+  .tile {
+    position: relative;
+    width: 42px; height: 42px; border-radius: 9px;
+    background: var(--panel-2); border: 1px solid var(--line);
+    display: flex; align-items: center; justify-content: center;
+    font-size: .72rem; color: var(--muted);
+  }
+  .tile.finish { background: linear-gradient(135deg,#ffd166,#ff8fab); color:#201a00; font-weight:800; }
+  .tokens { position:absolute; inset:0; display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:2px; }
+  .token { width:12px; height:12px; border-radius:50%; border:2px solid rgba(0,0,0,.3); }
+
+  /* ---- Play screen ---- */
+  .turn-banner { display:flex; align-items:center; gap:10px; font-weight:700; font-size:1.1rem; }
+  .turn-banner .swatch { width:18px; height:18px; border-radius:50%; }
+  .cat-chip {
+    display:inline-block; font-size:.75rem; font-weight:700; letter-spacing:.04em;
+    text-transform:uppercase; padding:3px 10px; border-radius:999px; color:#111;
+  }
+  .prompt {
+    font-size: clamp(1.3rem, 3.2vw, 2rem); font-weight: 600; margin: 14px 0;
+  }
+  .prompt .blank {
+    display:inline-block; min-width:120px; border-bottom:3px dashed var(--accent);
+    color: var(--accent); font-style: italic;
+  }
+  .guess-row { display:flex; gap:10px; }
+  .guess-row input { flex:1; }
+  .feedback { min-height: 26px; font-weight:700; }
+  .feedback.good { color: var(--good); }
+  .feedback.bad { color: var(--bad); }
+  .reveal { color: var(--muted); }
+  .reveal b { color: var(--ink); }
+  .scores { display:flex; flex-wrap:wrap; gap:10px; }
+  .score-pill { display:flex; align-items:center; gap:8px; background:var(--panel-2);
+    border:1px solid var(--line); border-radius:999px; padding:6px 14px; font-weight:600; }
+  .score-pill .swatch { width:14px; height:14px; border-radius:50%; }
+  .hidden { display: none !important; }
+  footer { color: var(--muted); font-size:.85rem; margin-top: 26px; text-align:center; }
+  .points-note { color: var(--muted); font-size:.9rem; }
+  .win h2 { font-size: 2rem; margin: 0 0 6px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>🎬 Finish the Line</h1>
+    <p class="tag">Complete the pop-culture quote. <b>"Oh my God, it's…"</b> → race your token to the finish.</p>
+  </header>
+
+  <!-- ================= SETUP ================= -->
+  <section id="setup" class="card stack">
+    <div>
+      <label>Players</label>
+      <div id="playerList" class="players"></div>
+      <button id="addPlayer" class="ghost" type="button">+ Add player</button>
+    </div>
+
+    <div>
+      <label>Categories in the deck</label>
+      <div id="catList" class="cats"></div>
+    </div>
+
+    <div class="row2">
+      <div>
+        <label for="trackLen">Track length (spaces to win)</label>
+        <input id="trackLen" type="number" min="8" max="40" value="20" />
+      </div>
+      <div>
+        <label for="deckMode">Deck order</label>
+        <select id="deckMode">
+          <option value="shuffle">Shuffle (recommended)</option>
+          <option value="order">As listed</option>
+        </select>
+      </div>
+    </div>
+
+    <p id="setupError" class="feedback bad"></p>
+    <button id="startBtn" type="button">Start game ▶</button>
+  </section>
+
+  <!-- ================= PLAY ================= -->
+  <section id="play" class="card stack hidden">
+    <div class="turn-banner">
+      <span class="swatch" id="turnSwatch"></span>
+      <span id="turnName"></span>'s turn
+      <span style="flex:1"></span>
+      <span class="cat-chip" id="catChip"></span>
+    </div>
+
+    <div class="board" id="board"></div>
+
+    <div class="prompt" id="prompt"></div>
+
+    <div class="guess-row">
+      <input id="guess" type="text" autocomplete="off" placeholder="…finish the quote" />
+      <button id="submitBtn" type="button">Guess</button>
+    </div>
+    <div style="display:flex; gap:10px;">
+      <button id="revealBtn" class="ghost" type="button">Give up / reveal</button>
+      <span style="flex:1"></span>
+      <button id="nextBtn" class="ghost hidden" type="button">Next player →</button>
+    </div>
+
+    <div class="feedback" id="feedback"></div>
+    <div class="reveal" id="revealLine"></div>
+
+    <hr style="border:none;border-top:1px solid var(--line)" />
+    <div class="scores" id="scores"></div>
+    <p class="points-note">Correct answers move you forward by the quote's difficulty (1–3 spaces). First to the finish wins.</p>
+  </section>
+
+  <!-- ================= WIN ================= -->
+  <section id="win" class="card stack win hidden">
+    <h2 id="winTitle"></h2>
+    <div class="scores" id="finalScores"></div>
+    <button id="againBtn" type="button">Play again ↻</button>
+  </section>
+
+  <footer>
+    A tiny open game. Add your own quotes in <code>quotes.js</code>.
+  </footer>
+</div>
+
+<script src="quotes.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  const PALETTE = ["#ff8fab", "#8ecae6", "#c3a6ff", "#7be0ad", "#ffd166", "#f4978e"];
+  const $ = (id) => document.getElementById(id);
+
+  // ---------- normalisation & matching ----------
+  function normalize(s) {
+    return (s || "")
+      .toLowerCase()
+      .replace(/[’']/g, "'")          // curly → straight apostrophe
+      .replace(/[^a-z0-9' ]/g, " ")   // drop punctuation
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+  // Levenshtein distance for a little typo tolerance.
+  function editDistance(a, b) {
+    const m = a.length, n = b.length;
+    if (!m) return n; if (!n) return m;
+    const dp = Array.from({ length: m + 1 }, (_, i) => [i, ...Array(n).fill(0)]);
+    for (let j = 0; j <= n; j++) dp[0][j] = j;
+    for (let i = 1; i <= m; i++)
+      for (let j = 1; j <= n; j++)
+        dp[i][j] = Math.min(
+          dp[i - 1][j] + 1,
+          dp[i][j - 1] + 1,
+          dp[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)
+        );
+    return dp[m][n];
+  }
+  function isCorrect(guess, card) {
+    const g = normalize(guess);
+    if (!g) return false;
+    for (const raw of card.accept) {
+      const a = normalize(raw);
+      if (g === a) return true;
+      // tolerate a small number of typos for longer answers
+      const tol = a.length >= 6 ? 2 : a.length >= 4 ? 1 : 0;
+      if (tol && editDistance(g, a) <= tol) return true;
+    }
+    return false;
+  }
+
+  // ---------- state ----------
+  const state = {
+    players: [],       // {name, color, pos, score}
+    deck: [],          // shuffled cards
+    deckIdx: 0,
+    current: 0,        // whose turn
+    trackLen: 20,
+    answered: false,   // has current card been resolved?
+  };
+
+  // ---------- setup screen ----------
+  const playerList = $("playerList");
+  function playerRow(idx, name) {
+    const row = document.createElement("div");
+    row.className = "player-row";
+    const sw = document.createElement("span");
+    sw.className = "swatch";
+    sw.style.background = PALETTE[idx % PALETTE.length];
+    const inp = document.createElement("input");
+    inp.type = "text";
+    inp.value = name || "Player " + (idx + 1);
+    inp.maxLength = 20;
+    const del = document.createElement("button");
+    del.className = "ghost";
+    del.type = "button";
+    del.textContent = "✕";
+    del.style.padding = "8px 12px";
+    del.addEventListener("click", () => {
+      if (playerList.children.length <= 1) return;
+      row.remove();
+      recolor();
+    });
+    row.appendChild(sw);
+    row.appendChild(inp);
+    row.appendChild(del);
+    return row;
+  }
+  function recolor() {
+    [...playerList.children].forEach((row, i) => {
+      row.querySelector(".swatch").style.background = PALETTE[i % PALETTE.length];
+    });
+  }
+  function addPlayer(name) {
+    if (playerList.children.length >= 6) return;
+    playerList.appendChild(playerRow(playerList.children.length, name));
+  }
+  addPlayer("Player 1");
+  addPlayer("Player 2");
+  $("addPlayer").addEventListener("click", () => addPlayer());
+
+  // categories
+  const categories = [...new Set(QUOTE_DECK.map((c) => c.category))];
+  const catList = $("catList");
+  categories.forEach((cat) => {
+    const lab = document.createElement("label");
+    const cb = document.createElement("input");
+    cb.type = "checkbox";
+    cb.value = cat;
+    cb.checked = true;
+    const dot = document.createElement("span");
+    dot.style.cssText =
+      "width:10px;height:10px;border-radius:50%;display:inline-block;background:var(--" +
+      cat + ")";
+    lab.appendChild(cb);
+    lab.appendChild(dot);
+    lab.appendChild(document.createTextNode(cat));
+    catList.appendChild(lab);
+  });
+
+  function shuffle(arr) {
+    const a = arr.slice();
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  $("startBtn").addEventListener("click", startGame);
+
+  function startGame() {
+    const err = $("setupError");
+    err.textContent = "";
+
+    const names = [...playerList.querySelectorAll("input")].map((i) =>
+      i.value.trim()
+    );
+    if (names.some((n) => !n)) { err.textContent = "Every player needs a name."; return; }
+
+    const chosen = [...catList.querySelectorAll("input:checked")].map((c) => c.value);
+    if (!chosen.length) { err.textContent = "Pick at least one category."; return; }
+
+    let deck = QUOTE_DECK.filter((c) => chosen.includes(c.category));
+    if ($("deckMode").value === "shuffle") deck = shuffle(deck);
+    if (!deck.length) { err.textContent = "No quotes in that selection."; return; }
+
+    state.players = names.map((name, i) => ({
+      name, color: PALETTE[i % PALETTE.length], pos: 0, score: 0,
+    }));
+    state.deck = deck;
+    state.deckIdx = 0;
+    state.current = 0;
+    state.trackLen = Math.max(8, Math.min(40, parseInt($("trackLen").value, 10) || 20));
+    state.answered = false;
+
+    $("setup").classList.add("hidden");
+    $("win").classList.add("hidden");
+    $("play").classList.remove("hidden");
+    renderTurn();
+  }
+
+  // ---------- play screen ----------
+  function currentCard() {
+    return state.deck[state.deckIdx % state.deck.length];
+  }
+
+  function renderBoard() {
+    const board = $("board");
+    board.innerHTML = "";
+    for (let i = 0; i <= state.trackLen; i++) {
+      const tile = document.createElement("div");
+      tile.className = "tile" + (i === state.trackLen ? " finish" : "");
+      tile.textContent = i === state.trackLen ? "🏁" : i === 0 ? "▶" : i;
+      const toks = document.createElement("div");
+      toks.className = "tokens";
+      state.players.forEach((p) => {
+        if (p.pos === i) {
+          const t = document.createElement("span");
+          t.className = "token";
+          t.style.background = p.color;
+          t.title = p.name;
+          toks.appendChild(t);
+        }
+      });
+      tile.appendChild(toks);
+      board.appendChild(tile);
+    }
+  }
+
+  function renderScores(targetId) {
+    const box = $(targetId);
+    box.innerHTML = "";
+    state.players.forEach((p) => {
+      const pill = document.createElement("div");
+      pill.className = "score-pill";
+      const sw = document.createElement("span");
+      sw.className = "swatch";
+      sw.style.background = p.color;
+      pill.appendChild(sw);
+      pill.appendChild(
+        document.createTextNode(`${p.name} — space ${p.pos}/${state.trackLen}`)
+      );
+      box.appendChild(pill);
+    });
+  }
+
+  function renderTurn() {
+    state.answered = false;
+    const p = state.players[state.current];
+    const card = currentCard();
+
+    $("turnName").textContent = p.name;
+    $("turnSwatch").style.background = p.color;
+
+    const chip = $("catChip");
+    chip.textContent = card.category;
+    chip.style.background = getComputedStyle(document.documentElement)
+      .getPropertyValue("--" + card.category) || "#ccc";
+
+    // prompt with a blank
+    $("prompt").innerHTML =
+      escapeHtml(card.before) + ' <span class="blank">?</span>';
+
+    $("guess").value = "";
+    $("guess").disabled = false;
+    $("submitBtn").disabled = false;
+    $("revealBtn").disabled = false;
+    $("feedback").textContent = "";
+    $("feedback").className = "feedback";
+    $("revealLine").innerHTML = "";
+    $("nextBtn").classList.add("hidden");
+
+    renderBoard();
+    renderScores("scores");
+    $("guess").focus();
+  }
+
+  function escapeHtml(s) {
+    return s.replace(/[&<>"']/g, (c) =>
+      ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])
+    );
+  }
+
+  function resolve(correct) {
+    if (state.answered) return;
+    state.answered = true;
+    const p = state.players[state.current];
+    const card = currentCard();
+
+    $("guess").disabled = true;
+    $("submitBtn").disabled = true;
+    $("revealBtn").disabled = true;
+
+    const fb = $("feedback");
+    if (correct) {
+      p.pos = Math.min(state.trackLen, p.pos + card.points);
+      p.score += card.points;
+      fb.textContent = `✅ Correct! +${card.points} space${card.points > 1 ? "s" : ""}.`;
+      fb.className = "feedback good";
+    } else {
+      fb.textContent = "❌ Not quite.";
+      fb.className = "feedback bad";
+    }
+    const full = (card.before + " " + card.answer).trim();
+    $("revealLine").innerHTML =
+      `<b>${escapeHtml(full)}</b> — <span>${escapeHtml(card.source)}</span>`;
+
+    renderBoard();
+    renderScores("scores");
+
+    // advance the deck so the next player gets a fresh card
+    state.deckIdx++;
+
+    if (p.pos >= state.trackLen) {
+      setTimeout(() => endGame(p), 650);
+      return;
+    }
+    $("nextBtn").classList.remove("hidden");
+    $("nextBtn").focus();
+  }
+
+  $("submitBtn").addEventListener("click", () => {
+    resolve(isCorrect($("guess").value, currentCard()));
+  });
+  $("guess").addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !state.answered) {
+      resolve(isCorrect($("guess").value, currentCard()));
+    }
+  });
+  $("revealBtn").addEventListener("click", () => resolve(false));
+  $("nextBtn").addEventListener("click", () => {
+    state.current = (state.current + 1) % state.players.length;
+    renderTurn();
+  });
+
+  // ---------- win screen ----------
+  function endGame(winner) {
+    $("play").classList.add("hidden");
+    $("win").classList.remove("hidden");
+    $("winTitle").innerHTML = `🏆 ${escapeHtml(winner.name)} wins!`;
+    renderScores("finalScores");
+  }
+  $("againBtn").addEventListener("click", () => {
+    $("win").classList.add("hidden");
+    $("setup").classList.remove("hidden");
+  });
+})();
+</script>
+</body>
+</html>
