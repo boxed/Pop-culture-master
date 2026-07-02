@@ -36,7 +36,8 @@ Or double-click `index.html` in a file browser.
 
 ## Categories
 
-Movies · TV · Music · Internet/Memes · Games — mix and match at setup.
+Movies · TV · Music · Internet/Memes · Games · Books · Ads/Slogans — mix and
+match at setup. The deck ships with 210+ quotes.
 
 ## Add your own quotes
 
@@ -44,7 +45,7 @@ All content lives in [`quotes.js`](quotes.js) as a plain array. Add an entry:
 
 ```js
 {
-  category: "Movies",              // Movies | TV | Music | Internet | Games
+  category: "Movies",              // Movies | TV | Music | Internet | Games | Books | Ads
   before:   "I'll be",             // the prompt shown to the player
   answer:   "back",                // canonical completion (shown on reveal)
   accept:   ["back"],              // accepted answers (lowercase, no punctuation)
